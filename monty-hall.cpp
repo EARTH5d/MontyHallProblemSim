@@ -1,52 +1,75 @@
 #include <iostream>
 #include <stdexcept>
+#include <string>
 #include <time.h>
-#include <limits>
+#include <algorithm>
 
 using namespace std;
 
 int main() {
 
-	int runs = 0;
-	int car = 0;
-	int playerPick = 0;
-	int openDoor = 0;
+	unsigned long runs = 0;
+	unsigned long car = 0;
+	unsigned long playerPick = 0;
+	unsigned long openDoor = 0;
 
 	bool isInputValid = false;
 
 	double timesThePlayerShouldStick = 0;
 	double timesThePlayerShouldSwitch = 0;
-	int timesThePlayerStick = 0;
+	unsigned long timesThePlayerStick = 0;
 	double timesThePlayerStick_wins = 0;
 	double timesThePlayerStick_loses = 0;
-	int timesThePlayerSwitch = 0;
+	unsigned long timesThePlayerSwitch = 0;
 	double timesThePlayerSwitch_wins = 0;
 	double timesThePlayerSwitch_loses = 0;
 	
-	string badInput;
+	string input;
+	std::size_t pos = 0;
 
 	srand(time(0));
 
 	while (!isInputValid){
-		cout << "How many runs do you want want to do: ";
-		cin >> runs;
-		if(cin.fail()){ //Checks for type mismacth.
-			
-			cin.clear(); //Clear the failbit.
-			cin >> badInput; //Exract the bad input.
-			if (badInput == "default") { //Check to see if it is default.
+		std::cout << "How many runs do you want want to do: ";
+
+		try {
+			getline(cin, input, '\n');
+			if (input.at(0) == '-'){
+				throw out_of_range("Negative numbers are out of range.");
+			}
+			runs = stoul(input, &pos);
+		
+			if (pos != input.length()){ //Check to see if it is a decimal instead of an intger.
+				cerr << "Invalid Input, decimal." << endl;
+				std::cout << "Sorry, but " << input << " is not a postive intger. Thus it is impossible to do " << input << " runs of the simulation. " << endl;
+				std::cout << "Please try agian and enter a postive intger in the range of 1 and 4,294,967,295." << endl;
+				continue;
+			}
+
+			if (runs == 0){
+				throw out_of_range("The number zero (0) is out of range.");
+			}
+
+		} catch (invalid_argument const& e){ //If there is a type mismacthed.
+			string temp = input;
+			transform(temp.begin(), temp.end(), temp.begin(), ::tolower);
+			if (temp == "default") { //Check to see if it is "default" and check runs to the default number of 100,000,000.
 				runs = 100000000;
-			} else {
-				cerr << "Sorry, but " << badInput << " is an invalid input. Must enter a postive intger." << endl;
-				cout << "Please try agian and enter a postive intger (A whole number greater than 0)." << endl;
+			} else { //Otherwises it is an invalid type.
+				cerr << e.what() << endl;
+				cerr << "Invalid Input, not a number." << endl;
+				std::cout << "Sorry, but " << input << " is not a postive intger. Thus it is impossible to do " << input << " runs of the simulation. " << endl;
+				std::cout << "Please try agian and enter a postive intger in the range of 1 and 4,294,967,295." << endl;
+				continue;
         	}
-			
-			cin.ignore(numeric_limits<streamsize>::max(), '\n'); //Ignore the remianing inputs.
+		} catch (out_of_range const& e){
+			cerr << e.what() << endl;
+			cerr << "Invalid Input, out of range." << endl;
+			std::cout << "Sorry, but " << input << " is out of the range of 1 and 4,294,967,295." << endl;
+			std::cout << "Please try agian and enter a postive intger bewteen 1 and 4,294,967,295." << endl;
 		}
-		if (runs <= 0){
-			cout << "Sorry. " << runs << " is not a postive intger. Thus it is impossible to do " << runs << " runs of the simulation. " << endl
-			<< "Please try agian and enter a postive intger (A whole number greater than 0)." << endl;
-		} else {
+
+		if (runs > 0){
 			isInputValid = true;
 		}
 	}
@@ -58,12 +81,12 @@ int main() {
 			openDoor = rand() % 3;
 		}  while ((openDoor == playerPick) || (openDoor == car));
 
-		//cout << "the Player picker is door #" << playerPick + 1 << ". The host opened door #" << openDoor + 1 << ". ";
+		//std::cout << "the Player picker is door #" << playerPick + 1 << ". The host opened door #" << openDoor + 1 << ". ";
 		if (playerPick == car){
-			//cout << "The player intially picked the car!!!" << endl;
+			//std::cout << "The player intially picked the car!!!" << endl;
 			timesThePlayerShouldStick++;
 		} else {
-			//cout << "The player intially picked a goat" << endl;
+			//std::cout << "The player intially picked a goat" << endl;
 			timesThePlayerShouldSwitch++;
 		}
 		if (rand() % 2 == 0){
@@ -72,36 +95,37 @@ int main() {
 				j++;
 			}
 			playerPick = j;
-			//cout << "The player switched" << endl;
+			//std::cout << "The player switched" << endl;
 			timesThePlayerSwitch++;
 			playerPick == car ? timesThePlayerSwitch_wins++ : timesThePlayerSwitch_loses++;
 		} else {
-			//cout << "The player sticked" << endl;
+			//std::cout << "The player sticked" << endl;
 			timesThePlayerStick++;
 			playerPick == car ? timesThePlayerStick_wins++ : timesThePlayerStick_loses++;
 		}
 	}
 
-	cout << endl << "The player should have stick to their door " << ((timesThePlayerShouldStick * 100)/ runs) << "% of the time." << endl;
-	cout << "The player should have switch " << ((timesThePlayerShouldSwitch * 100)/ runs) << "% of the time." << endl;
+	std::cout << endl; 
+	std::cout << "The player should have stuck with their choosen door " << ((timesThePlayerShouldStick * 100)/ runs) << "% of the time." << endl;
+	std::cout << "The player should have switched over to the other door " << ((timesThePlayerShouldSwitch * 100)/ runs) << "% of the time." << endl;
 	
-	cout << "Out of " << runs << " runs of the simluation the player... " << endl;
-	cout << "\tSwitched " << (((timesThePlayerSwitch_wins + timesThePlayerSwitch_loses) * 100) / runs) << " of the time, and... " << endl;  
-	cout << "\t\tWon:" << endl;
-	cout << "\t\t\t" << ((timesThePlayerSwitch_wins * 100) / timesThePlayerSwitch) << "% of the times they choosed to switch." << endl;
-	cout << "\t\t\t" << ((timesThePlayerSwitch_wins * 100) / runs) << "% of the runs of the simulation." << endl;
-	cout << "\t\tLosed:"  << endl;
-	cout << "\t\t\t" << ((timesThePlayerSwitch_loses * 100) / timesThePlayerSwitch) << "% of the times  they choosed to switch." << endl;
-	cout << "\t\t\t" << ((timesThePlayerSwitch_loses * 100) / runs) << "% of the runs of the simulation." << endl;
-	cout << "\tStuck: " << (((timesThePlayerStick_wins + timesThePlayerStick_loses) * 100) / runs) << " of the time, and... " << endl;
-	cout << "\t\tWon: " << endl;
-	cout << "\t\t\t" <<  ((timesThePlayerStick_wins * 100) / timesThePlayerStick) << "% of the times they stuck thier initial pick." << endl;
-	cout << "\t\t\t" <<  ((timesThePlayerStick_wins * 100) / runs) << "% of the runs of the simulation." << endl;
-	cout << "\t\tLosed: " << endl;
-	cout << "\t\t\t" << ((timesThePlayerStick_loses * 100) / timesThePlayerStick) << "% of the times they stuck thier initial pick." << endl;
-	cout << "\t\t\t" <<  ((timesThePlayerStick_loses * 100) / runs) << "% of the runs of the simulation." << endl;
-	cout << "\tIn total the Player won in " << (((timesThePlayerSwitch_wins + timesThePlayerStick_wins) * 100) / runs) << "% of the runs, ";
-	cout << "And losed in " << (((timesThePlayerSwitch_loses + timesThePlayerStick_loses) * 100) / runs) << "% of them" << endl;
+	std::cout << "Out of " << runs << " runs of the simluation the player... " << endl;
+	std::cout << "\tSwitched " << (((timesThePlayerSwitch_wins + timesThePlayerSwitch_loses) * 100) / runs) << "% of the time, and... " << endl;  
+	std::cout << "\t\tWon:" << endl;
+	std::cout << "\t\t\t" << ((timesThePlayerSwitch_wins * 100) / timesThePlayerSwitch) << "% of the times they choosed to switch." << endl;
+	std::cout << "\t\t\t" << ((timesThePlayerSwitch_wins * 100) / runs) << "% of the runs of the simulation." << endl;
+	std::cout << "\t\tLosed:"  << endl;
+	std::cout << "\t\t\t" << ((timesThePlayerSwitch_loses * 100) / timesThePlayerSwitch) << "% of the times  they choosed to switch." << endl;
+	std::cout << "\t\t\t" << ((timesThePlayerSwitch_loses * 100) / runs) << "% of the runs of the simulation." << endl;
+	std::cout << "\tStuck " << (((timesThePlayerStick_wins + timesThePlayerStick_loses) * 100) / runs) << "% of the time, and... " << endl;
+	std::cout << "\t\tWon: " << endl;
+	std::cout << "\t\t\t" <<  ((timesThePlayerStick_wins * 100) / timesThePlayerStick) << "% of the times they stuck thier initial pick." << endl;
+	std::cout << "\t\t\t" <<  ((timesThePlayerStick_wins * 100) / runs) << "% of the runs of the simulation." << endl;
+	std::cout << "\t\tLosed: " << endl;
+	std::cout << "\t\t\t" << ((timesThePlayerStick_loses * 100) / timesThePlayerStick) << "% of the times they stuck thier initial pick." << endl;
+	std::cout << "\t\t\t" <<  ((timesThePlayerStick_loses * 100) / runs) << "% of the runs of the simulation." << endl;
+	std::cout << "In total they won in " << (((timesThePlayerSwitch_wins + timesThePlayerStick_wins) * 100) / runs) << "% of the runs, " << endl;
+	std::cout << "And they losed in " << (((timesThePlayerSwitch_loses + timesThePlayerStick_loses) * 100) / runs) << "% of them" << endl;
 
 	return 0;
 }
