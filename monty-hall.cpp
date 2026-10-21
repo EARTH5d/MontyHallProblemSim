@@ -1,30 +1,4 @@
-#include <iostream>
-#include <stdexcept>
-#include <string>
-#include <time.h>
-#include <cmath>
-#include <vector>
-#include <random>
-#include <algorithm>
-#include <thread>
-#include <cstdint>
-
-using namespace std;
-
-struct Results {
-	/* data */
-	double timesPlayerShldStuck = 0;
-	double timesPlayerShldSwitch = 0;
-	double timesPlayerStuck_wins = 0;
-	double timesPlayerStuck_loses = 0;
-	double timesPlayerSwitch_wins = 0;
-	double timesPlayerSwitch_loses = 0;
-	unsigned long timesPlayerSwitch = 0;
-	unsigned long timesPlayerStuck = 0;
-};
-
-Results run_monty_hall_problem (unsigned long runs, unsigned int seed);
-double calculate_percentage(double relative_value, unsigned long reference_value);
+#include "monty-hall.h"
 
 int main() {
 
@@ -86,7 +60,7 @@ int main() {
 	cout << endl << "Runing " << runs << " simulations of the Monty hall problem." << endl;
 
 	if ((threadCount > 1) && (runs > 50)) {
-		if (runs < threadCount){
+		if (runs < threadCount){ //Just in cases.
 			threadCount = runs;
 		}
 		vector<Results> threadStats(threadCount); //Vector to contain the results of each thread.
