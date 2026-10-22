@@ -25,6 +25,7 @@ struct Results { //A struct for holding all the data in the statisics of the res
 	unsigned long timesPlayerStuck = 0;
 };
 
+unsigned long get_input(string outputType);
+string invalid_input_message(string input, string outputType);
 Results run_monty_hall_problem (unsigned long runs, unsigned long doors, unsigned int seed);
-string invalid_input_message(string input);
 double calculate_percentage(double relative_value, unsigned long reference_value);
