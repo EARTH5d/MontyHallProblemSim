@@ -84,7 +84,7 @@ int main() {
 		for (unsigned long i = 0; i < threadCount; i++) {
 			unsigned long runPerThd = runPerThd_base + (i < runPerThd_remainder ? 1 : 0); //Assigned the remainder to certian threads.
 			
-			threads.emplace_back([&, i, runPerThd]() {threadStats[i] = run_monty_hall_problem(runPerThd, 3, seed + i);}); //Create the threads.
+			threads.emplace_back([&, i, runPerThd]() {threadStats[i] = run_monty_hall_problem(runPerThd, 4, seed + i);}); //Create the threads.
 		}
 		
 		for (auto& t : threads) { // Wait for all threads to finish.
@@ -104,7 +104,7 @@ int main() {
 		}
 
 	} else {
-		totalStats = run_monty_hall_problem(runs, 3, seed);
+		totalStats = run_monty_hall_problem(runs, 4, seed);
 	}
 
 	std::cout << endl; 
@@ -114,8 +114,8 @@ int main() {
 	std::cout << "Out of " << runs << " runs of the simluation the player... " << endl;
 	std::cout << "\tSwitched " << calculate_percentage((totalStats.timesPlayerSwitch_wins + totalStats.timesPlayerSwitch_loses), runs) << "% of the time, and... " << endl;  
 	std::cout << "\t\tWon:" << endl;
-	std::cout << "\t\t\t" << calculate_percentage(totalStats.timesPlayerSwitch_wins,totalStats.timesPlayerSwitch) << "% of the times they choosed to switch." << endl;
-	std::cout << "\t\t\t" << calculate_percentage(totalStats.timesPlayerSwitch_wins,runs) << "% of the runs of the simulation." << endl;
+	std::cout << "\t\t\t" << calculate_percentage(totalStats.timesPlayerSwitch_wins, totalStats.timesPlayerSwitch) << "% of the times they choosed to switch." << endl;
+	std::cout << "\t\t\t" << calculate_percentage(totalStats.timesPlayerSwitch_wins, runs) << "% of the runs of the simulation." << endl;
 	std::cout << "\t\tLosed:"  << endl;
 	std::cout << "\t\t\t" << calculate_percentage(totalStats.timesPlayerSwitch_loses, totalStats.timesPlayerSwitch) << "% of the times  they choosed to switch." << endl;
 	std::cout << "\t\t\t" << calculate_percentage(totalStats.timesPlayerSwitch_loses, runs) << "% of the runs of the simulation." << endl;
@@ -141,19 +141,40 @@ Results run_monty_hall_problem (unsigned long runs, unsigned long doors, unsigne
     bernoulli_distribution coin(0.5);
 	
 	unsigned long car = 0;
-	unsigned long closedDoor = 0;
+	unsigned long closedDoor = -1;
 	unsigned long playerPick = 0;
 	unsigned long openDoor = 0;
-	
+	//set<unsigned long> closedDoors = {};
+	set<unsigned long> openDoors = {};
 
+	bool wasOpen = false;
+	
 	for (unsigned long i = 0; i < runs; i++){
 		car = door(rng);
 		playerPick = door(rng);
-		do {
-			openDoor = door(rng);
-		}  while ((openDoor == playerPick) || (openDoor == car));
+		
+		if (playerPick != car){
+			closedDoor = car;
+		} else {
+			do {
+				closedDoor = door(rng);
+			}  while ((closedDoor == playerPick) || (closedDoor == car));
+		}
 
-		//std::cout << "the Player picker is door #" << playerPick + 1 << ". The host opened door #" << openDoor + 1 << ". ";
+		for (int i = 0; i < doors - 2; i++)
+			do {
+				openDoor = door(rng);
+				if ((openDoor == playerPick) || (openDoor == closedDoor))
+					wasOpen = false;
+				else
+					wasOpen = openDoors.insert(openDoor).second;
+			}  while (wasOpen == false);
+		/*} else {
+			do {
+				openDoor = door(rng);
+			}  while ((openDoor == playerPick) || (openDoor == car));
+		}*/
+			//std::cout << "the Player picker is door #" << playerPick + 1 << ". The host opened door #" << openDoor + 1 << ". ";
 		if (playerPick == car){
 			//std::cout << "The player intially picked the car!!!" << endl;
 			stats.timesPlayerShldStuck++;
@@ -163,7 +184,7 @@ Results run_monty_hall_problem (unsigned long runs, unsigned long doors, unsigne
 		}
 		if (coin(rng)){
 			int j = 0;
-			while((j == playerPick) || (j == openDoor)){
+			while((j == playerPick) || (openDoors.contains(j))){
 				j++;
 			}
 			playerPick = j;
@@ -175,6 +196,8 @@ Results run_monty_hall_problem (unsigned long runs, unsigned long doors, unsigne
 			stats.timesPlayerStuck++;
 			playerPick == car ? stats.timesPlayerStuck_wins++ : stats.timesPlayerStuck_loses++;
 		}
+
+		openDoors.clear();
 	}
 
 	return stats;
