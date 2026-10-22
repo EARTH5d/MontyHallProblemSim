@@ -4,60 +4,72 @@ int main() {
 
 	bool isInputValid = false;
 
-	unsigned int threadCount = std::thread::hardware_concurrency();
+	unsigned int threadCount = thread::hardware_concurrency();
 
 	unsigned long runs = 0;
 	unsigned long runPerThd_base = 0;
 	unsigned long runPerThd_remainder = 0;
-	unsigned int seed = time(nullptr); //Seed for the threats.
+	unsigned int seed = time(nullptr); //Seed for the threads.
 
 	Results totalStats;
-	
 	string input;
+	string temp;
 	size_t pos = 0;
 
+	bool isNegNumber = true;
+
 	while (!isInputValid){
-		cout << "How many runs do you want want to do: ";
-		try {
-			getline(cin, input, '\n');
-			if (input.at(0) == '-'){
-				throw out_of_range("Negative numbers are out of range.");
-			}
-			runs = stoul(input, &pos);
+		std::cout << "How many runs do you want want to do: ";
+		getline(cin, input, '\n');
 		
-			if (pos != input.length()){ //Check to see if it is a decimal instead of an intger.
-				cerr << "Invalid Input, decimal." << endl;
-				std::cout << "Sorry, but " << input << " is not a postive intger. Thus it is impossible to do " << input << " runs of the simulation. " << endl;
-				std::cout << "Please try agian and enter a postive intger in the range of 1 and 4,294,967,295." << endl;
-				continue;
-			}
+		temp = input;
+		transform(temp.begin(), temp.end(), temp.begin(), ::tolower);
+		if (temp == "default") { //Check to see if it is "default" and check runs to the default number of 100,000,000.
+			runs = 100000000;
+			isInputValid = true;
+			break;
+		}
 
-			if (runs == 0){
-				throw out_of_range("The number zero (0) is out of range.");
-			}
-
-		} catch (invalid_argument const& e){ //If there is a type mismacthed.
-			string temp = input;
-			transform(temp.begin(), temp.end(), temp.begin(), ::tolower);
-			if (temp == "default") { //Check to see if it is "default" and check runs to the default number of 100,000,000.
-				runs = 100000000;
-			} else { //Otherwises it is an invalid type.
-				cerr << "Invalid Input, not a number. \"" << e.what() <<"\"" << endl;
-				std::cout << "Sorry, but " << input << " is not a postive intger. Thus it is impossible to do " << input << " runs of the simulation. " << endl;
-				std::cout << "Please try agian and enter a postive intger bewteen 1 and 4,294,967,295." << endl;
-				continue;
-			}
-		} catch (out_of_range const& e){
-			cerr << "Invalid Input, out of range. \"" << e.what() <<"\"" << endl;
-			std::cout << "Sorry, but " << input << " is out of the range of 1 and 4,294,967,295." << endl;
-			std::cout << "Please try agian and enter a postive intger within that range." << endl;
+		if (input.empty()){
+			std::cout << "Sorry, it appear you did not enter anything at all. Please try agian." << endl;
 			continue;
 		}
 
-		isInputValid = true;
+		if (input.at(0) == '-'){
+			
+			if (all_of(next(input.begin()), input.end(), ::isdigit))
+				std::cout << "Sorry, but " << input << " is a negative number.";
+			else 
+				std::cout << "Sorry, but " << input << " is a not an not a intger number.";
+			
+			std::cout << invalid_input_message(input);
+			continue;
+		}
+
+		try {
+			runs = stoul(input, &pos);
+
+			if (pos != input.length()){ //Check to see if the user really did enter an only a string of digits.
+				std::cout << "Sorry, but " << input << " is a not an not a intger number." << invalid_input_message(input);
+				continue;
+			}
+			if (runs == 0){
+				std::cout << "Sorry, but 0 runs equal no runs." << invalid_input_message(input);
+				continue;
+			}
+			isInputValid = true;
+
+		} catch (invalid_argument const& e){ //If the input is of type mismacthed type.
+			std::cout << "Sorry, but " << input << " is not a postive intger." << invalid_input_message(input);
+		} catch (out_of_range const& e){ //If the input is out of range.
+			std::cout << "Sorry, but " << input << " greater than 4,294,967,295." << endl;
+			std::cout << "Please try agian and enter a postive intger that is bewteen 1 and 4,294,967,295." << endl;
+		}
+
+		
 	}
 
-	cout << endl << "Runing " << runs << " simulations of the Monty hall problem." << endl;
+	std::cout << endl << "Runing " << runs << " simulations of the Monty hall problem." << endl;
 
 	if ((threadCount > 1) && (runs > 50)) {
 		if (runs < threadCount){ //Just in cases.
@@ -72,7 +84,7 @@ int main() {
 		for (unsigned long i = 0; i < threadCount; i++) {
 			unsigned long runPerThd = runPerThd_base + (i < runPerThd_remainder ? 1 : 0); //Assigned the remainder to certian threads.
 			
-			threads.emplace_back([&, i, runPerThd]() {threadStats[i] = run_monty_hall_problem(runPerThd, seed + i);}); //Create the threads.
+			threads.emplace_back([&, i, runPerThd]() {threadStats[i] = run_monty_hall_problem(runPerThd, 3, seed + i);}); //Create the threads.
 		}
 		
 		for (auto& t : threads) { // Wait for all threads to finish.
@@ -92,7 +104,7 @@ int main() {
 		}
 
 	} else {
-		totalStats = run_monty_hall_problem(runs, seed);
+		totalStats = run_monty_hall_problem(runs, 3, seed);
 	}
 
 	std::cout << endl; 
@@ -120,17 +132,18 @@ int main() {
 	return 0;
 }
 
-Results run_monty_hall_problem (unsigned long runs, unsigned int seed) {
+Results run_monty_hall_problem (unsigned long runs, unsigned long doors, unsigned int seed) {
 	
 	Results stats;
 
 	mt19937 rng(seed);
-    uniform_int_distribution<unsigned long> door(0, 2);
+    uniform_int_distribution<unsigned long> door(0, doors - 1);
     bernoulli_distribution coin(0.5);
 	
-	int car = 0;
-	int playerPick = 0;
-	int openDoor = 0;
+	unsigned long car = 0;
+	unsigned long closedDoor = 0;
+	unsigned long playerPick = 0;
+	unsigned long openDoor = 0;
 	
 
 	for (unsigned long i = 0; i < runs; i++){
@@ -165,6 +178,10 @@ Results run_monty_hall_problem (unsigned long runs, unsigned int seed) {
 	}
 
 	return stats;
+}
+
+string invalid_input_message(string input){
+	return " Thus it is impossible to do " + input + " runs of the simulation. \n Please try agian and enter a postive intger that is bewteen 1 and 4,294,967,295. \n";
 }
 
 double calculate_percentage(double relative_value, unsigned long reference_value){
